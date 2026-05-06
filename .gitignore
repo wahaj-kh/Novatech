@@ -2,9 +2,12 @@
 __pycache__/
 venv/
 .env
+backend/.env
 *.sqlite3
 *.sqlite
 *.db
+backend/*.db
+*.sql_app.db
 
 # --- Frontend (Next.js/Node) ---
 node_modules/
