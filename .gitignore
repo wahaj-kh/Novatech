@@ -1,0 +1,17 @@
+# --- Backend (Python/FastAPI) ---
+__pycache__/
+venv/
+.env
+*.sqlite3
+*.sqlite
+*.db
+
+# --- Frontend (Next.js/Node) ---
+node_modules/
+.next/
+.DS_Store
+out/
+build/
+
+# --- Tools ---
+.vscode/
