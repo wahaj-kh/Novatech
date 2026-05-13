@@ -20,12 +20,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
       <body
-        className={`${inter.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${inter.variable} font-sans antialiased bg-black text-white`}
       >
         <Navbar />
-        <main className="min-h-screen pt-14 md:pt-16">
+        <main className="min-h-screen">
           {children}
         </main>
         <Toaster />

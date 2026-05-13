@@ -63,7 +63,12 @@ export default function ProductDetail() {
         quantity
       );
       // 2. Sync to backend
-      await api.post("/cart/items", { product_id: product.id, quantity });
+      const formData = new FormData();
+      formData.append("product_id", product.id.toString());
+      formData.append("quantity", quantity.toString());
+      await api.post("/cart/items", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
       setAdded(true);
       toast({ title: "Added to Cart ✓", description: `${quantity}× ${product.name}` });
       setTimeout(() => setAdded(false), 2500);

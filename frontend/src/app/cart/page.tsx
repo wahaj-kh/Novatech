@@ -51,7 +51,11 @@ export default function CartPage() {
       if (newQty <= 0) {
         await api.delete(`/cart/items/${product_id}`);
       } else {
-        await api.patch(`/cart/items/${product_id}`, { quantity: newQty });
+        const formData = new FormData();
+        formData.append("quantity", newQty.toString());
+        await api.patch(`/cart/items/${product_id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
       }
     } catch {
       syncFromBackend();

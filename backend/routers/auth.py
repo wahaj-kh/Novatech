@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
@@ -12,15 +12,15 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
-@router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+@router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED, summary="Register a New Customer", description="Creates a new customer account and initializes an empty shopping cart.")
+def register(email: str = Form(...), password: str = Form(...), db: Session = Depends(database.get_db)):
+    db_user = db.query(models.User).filter(models.User.email == email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # By default creating a customer, but could be adjusted to support admin creation
-    new_user = models.Customer(email=user.email)
-    new_user.password = user.password # Hashed automatically by setter
+    new_user = models.Customer(email=email)
+    new_user.password = password # Hashed automatically by setter
     
     db.add(new_user)
     db.commit()
@@ -33,7 +33,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     
     return new_user
 
-@router.post("/login", response_model=schemas.Token)
+@router.post("/login", response_model=schemas.Token, summary="Login User", description="Authenticates a user and returns a JWT Bearer token.")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not user or not user.verify_password(form_data.password):

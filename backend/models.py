@@ -63,6 +63,7 @@ class Product(Base):
     category = Column(String, index=True, nullable=False)
     image_url = Column(String, nullable=True)
     stock = Column(Integer, default=0)
+    is_featured = Column(Boolean, default=False)
 
 class Cart(Base):
     __tablename__ = "carts"
@@ -103,3 +104,25 @@ class Order(Base):
         if value < 0:
             raise ValueError("Total amount cannot be negative")
         self._total_amount = value
+
+class HeroSetting(Base):
+    __tablename__ = "hero_settings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)
+    
+    hotspots = relationship("HeroHotspot", back_populates="hero_setting", cascade="all, delete-orphan")
+
+class HeroHotspot(Base):
+    __tablename__ = "hero_hotspots"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    hero_setting_id = Column(Integer, ForeignKey("hero_settings.id"))
+    top = Column(String, nullable=False) # e.g., "45%"
+    left = Column(String, nullable=False) # e.g., "75%"
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    
+    hero_setting = relationship("HeroSetting", back_populates="hotspots")

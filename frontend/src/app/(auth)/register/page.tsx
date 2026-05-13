@@ -26,7 +26,12 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       // Register
-      await api.post("/auth/register", { email, password });
+      const registerData = new FormData();
+      registerData.append("email", email);
+      registerData.append("password", password);
+      await api.post("/auth/register", registerData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
 
       // Auto-login after registration
       const formData = new URLSearchParams();

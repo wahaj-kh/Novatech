@@ -1,123 +1,236 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, Suspense, useRef } from "react";
 import Hero from "@/components/Hero";
-import { api } from "@/lib/api";
+import Carousel from "@/components/Carousel";
+import FeatureSpotlight from "@/components/FeatureSpotlight";
+import Footer from "@/components/Footer";
+import { useProductStore } from "@/lib/productStore";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
-  image_url: string;
-}
-
-export default function Home() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+function ProductGrid() {
+  const { products, isLoading, fetchProducts } = useProductStore();
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+  const sectionRef = useRef<HTMLElement>(null);
+  const didScrollRef = useRef(false);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await api.get("/products");
-        setProducts(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
+
+  // When a category filter is applied, scroll to the grid smoothly
+  useEffect(() => {
+    if (categoryParam && !didScrollRef.current) {
+      didScrollRef.current = true;
+      setTimeout(() => {
+        sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+    if (!categoryParam) {
+      didScrollRef.current = false;
+    }
+  }, [categoryParam]);
+
+  const displayedProducts = categoryParam
+    ? products.filter(p => p.category.toLowerCase() === categoryParam.toLowerCase())
+    : products;
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Hero />
-      
-      <section id="latest-arrivals" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    <section ref={sectionRef} id="latest-arrivals" className="relative bg-black py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Section header */}
         <motion.div
-          className="text-center mb-16"
+          className="mb-16 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end"
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.35 }}
+          viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Latest Arrivals</h2>
-          <p className="text-muted-foreground text-lg">Designed for power. Engineered for elegance.</p>
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/30">
+              {categoryParam ? "Category" : "Catalog"}
+            </p>
+            <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-bold tracking-[-0.04em] text-white leading-[1.05]">
+              {categoryParam ? categoryParam : "Latest Arrivals"}
+            </h2>
+          </div>
+          {categoryParam && (
+            <Link
+              href="/"
+              scroll={false}
+              className="flex items-center gap-2 text-sm font-medium text-white/40 transition-colors hover:text-white"
+            >
+              View all
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
         </motion.div>
-        
+
+        {/* Category pills */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={{
-            hidden: {},
-            visible: { transition: { staggerChildren: 0.09 } },
-          }}
+          className="mb-12 flex flex-wrap gap-2"
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
         >
-          {loading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-border/50 overflow-hidden animate-pulse">
-                <div className="aspect-square bg-muted/50" />
-                <div className="p-6 space-y-4">
-                  <div className="h-4 w-1/4 bg-muted/50 rounded" />
-                  <div className="h-6 w-3/4 bg-muted/50 rounded" />
+          {["Smartphones", "Laptops", "Tablets", "Wearables", "Accessories"].map((cat) => (
+            <Link
+              key={cat}
+              href={`/?category=${cat}`}
+              scroll={false}
+              className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-all ${
+                categoryParam === cat
+                  ? "border-[#2997ff] bg-[#2997ff]/10 text-[#2997ff]"
+                  : "border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              {cat}
+            </Link>
+          ))}
+          {categoryParam && (
+            <Link
+              href="/"
+              scroll={false}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/60 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
+            >
+              All
+            </Link>
+          )}
+        </motion.div>
+
+        {/* Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-3xl border border-white/[0.06] bg-white/[0.02] animate-pulse">
+                <div className="aspect-square bg-white/[0.04]" />
+                <div className="p-6 space-y-3">
+                  <div className="h-3 w-1/4 rounded-full bg-white/10" />
+                  <div className="h-5 w-3/4 rounded-full bg-white/10" />
                   <div className="flex justify-between items-center pt-4">
-                    <div className="h-5 w-1/4 bg-muted/50 rounded" />
-                    <div className="h-8 w-24 bg-muted/50 rounded-full" />
+                    <div className="h-4 w-1/4 rounded-full bg-white/10" />
+                    <div className="h-8 w-24 rounded-full bg-white/10" />
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            products.map((product) => (
+            ))}
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {displayedProducts.length === 0 ? (
               <motion.div
-                key={product.id}
-                variants={{
-                  hidden: { opacity: 0, y: 26, scale: 0.98 },
-                  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
-                }}
+                key="empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="py-24 text-center text-white/30"
               >
-                <Link href={`/products/${product.id}`} className="group rounded-2xl glassmorphism border border-border/50 overflow-hidden hover:border-primary/50 transition-all duration-300 block">
-                <div className="aspect-square bg-secondary/20 relative flex items-center justify-center p-8">
-                  {product.image_url ? (
-                    <motion.img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="object-contain w-full h-full"
-                      whileHover={{ scale: 1.06, rotate: -0.4 }}
-                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl flex items-center justify-center border border-border/20">
-                      <span className="text-zinc-500 text-sm tracking-widest uppercase font-medium">No Image</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-6">
-                  <div className="text-xs font-semibold text-primary mb-2 tracking-wider uppercase">{product.category}</div>
-                  <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
-                  <div className="flex items-center justify-between mt-6">
-                    <span className="text-lg font-medium">${product.price.toFixed(2)}</span>
-                    <button className="text-sm font-medium bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground px-4 py-2 rounded-full transition-colors pointer-events-none">
-                      Learn More
-                    </button>
-                  </div>
-                </div>
+                <p className="text-lg">No products found in this category.</p>
+                <Link href="/" scroll={false} className="mt-4 inline-flex items-center gap-2 text-sm text-[#2997ff] hover:underline">
+                  Browse all products <ArrowRight className="h-4 w-4" />
                 </Link>
               </motion.div>
-            ))
-          )}
-        </motion.div>
-        {!loading && products.length === 0 && (
-          <div className="text-center text-muted-foreground py-12">
-            No products available yet. Add some from the Admin Dashboard!
-          </div>
+            ) : (
+              <motion.div
+                key={categoryParam || "all"}
+                className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={{
+                  hidden: {},
+                  visible: { transition: { staggerChildren: 0.07 } },
+                  exit: { transition: { staggerChildren: 0.04, staggerDirection: -1 } },
+                }}
+              >
+                {displayedProducts.map((product) => (
+                  <motion.div
+                    key={product.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 40, scale: 0.96 },
+                      visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 90, damping: 18 } },
+                      exit: { opacity: 0, y: -16, scale: 0.96, transition: { duration: 0.18 } },
+                    }}
+                  >
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/[0.06] bg-[#0d0d0d] transition-all duration-500 hover:border-white/[0.12] hover:bg-[#111]"
+                    >
+                      {/* Image area */}
+                      <div className="relative aspect-square overflow-hidden bg-[#0a0a0a] flex items-center justify-center p-10">
+                        <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                          style={{ background: "radial-gradient(circle at 50% 60%, rgba(41,151,255,0.08) 0%, transparent 70%)" }}
+                        />
+                        {product.image_url ? (
+                          <motion.img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="relative z-10 h-full w-full object-contain transition-transform duration-700 group-hover:scale-[1.06]"
+                            style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.5))" }}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center rounded-2xl border border-white/[0.06]">
+                            <span className="text-xs font-medium uppercase tracking-[0.2em] text-white/20">No Image</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info area */}
+                      <div className="flex flex-1 flex-col p-6">
+                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2997ff]">
+                          {product.category}
+                        </p>
+                        <h3 className="text-lg font-semibold tracking-[-0.02em] text-white mb-1">
+                          {product.name}
+                        </h3>
+                        {product.description && (
+                          <p className="text-sm text-white/40 line-clamp-2 mb-4 leading-relaxed">
+                            {product.description}
+                          </p>
+                        )}
+                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/[0.06]">
+                          <span className="text-lg font-semibold tracking-[-0.02em] text-white">
+                            ${product.price.toFixed(2)}
+                          </span>
+                          <span className="flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-4 py-1.5 text-xs font-semibold text-white/70 transition-all group-hover:bg-[#2997ff] group-hover:border-[#2997ff] group-hover:text-white">
+                            View
+                            <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         )}
-      </section>
+      </div>
+    </section>
+  );
+}
+
+export default function Home() {
+  return (
+    <div className="flex flex-col min-h-screen bg-black">
+      <Hero />
+      <Carousel />
+      <Suspense fallback={
+        <div className="bg-black py-28 text-center text-white/30">
+          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+        </div>
+      }>
+        <ProductGrid />
+      </Suspense>
+      <div id="feature-spotlight">
+        <FeatureSpotlight />
+      </div>
+      <Footer />
     </div>
   );
 }
