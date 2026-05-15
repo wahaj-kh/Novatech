@@ -20,8 +20,8 @@ app = FastAPI(
 # In production, replace "*" origins with your actual domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"
-    "https://novatech-frontend-flax.vercel.app"],
+    allow_origins=["https://novatech-frontend-flax.vercel.app","http://localhost:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
