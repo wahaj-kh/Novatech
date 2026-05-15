@@ -24,16 +24,24 @@ export default function RegisterPage() {
       return;
     }
     setIsLoading(true);
+
+    // Step 1: Register
     try {
-      // Register
       const registerData = new FormData();
       registerData.append("email", email);
       registerData.append("password", password);
       await api.post("/auth/register", registerData, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       });
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      setError(detail ?? "Registration failed. Please try again.");
+      setIsLoading(false);
+      return;
+    }
 
-      // Auto-login after registration
+    // Step 2: Auto-login (registration succeeded — login failure is non-fatal)
+    try {
       const formData = new URLSearchParams();
       formData.append("username", email);
       formData.append("password", password);
@@ -45,8 +53,9 @@ export default function RegisterPage() {
       const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
       setAuth(token, payload.role);
       router.push("/");
-    } catch (err: any) {
-      setError(err?.response?.data?.detail ?? "Registration failed. This email may already be in use.");
+    } catch {
+      // Registration worked but auto-login failed — send user to login page
+      router.push("/login?registered=true");
     } finally {
       setIsLoading(false);
     }
