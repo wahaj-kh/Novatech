@@ -36,7 +36,16 @@ def register(email: str = Form(...), password: str = Form(...), db: Session = De
 @router.post("/login", response_model=schemas.Token, summary="Login User", description="Authenticates a user and returns a JWT Bearer token.")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not user.verify_password(form_data.password):
+    print(f"Checking user: {user.email if user else 'NOT FOUND'}")
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    verification_result = user.verify_password(form_data.password)
+    print(f"Verification result: {verification_result}")
+    if not verification_result:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
