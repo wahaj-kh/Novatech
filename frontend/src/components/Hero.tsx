@@ -90,7 +90,7 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          Ultra-thin. Impossibly fast. Designed to elevate every moment of your day.
+           Impossibly fast. Designed to elevate every moment of your day.
         </motion.p>
 
         {/* CTAs */}
